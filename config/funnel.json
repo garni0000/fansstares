@@ -1,0 +1,84 @@
+{
+  "_doc": "Types: teaser_text | free_media | ppv | chat | end. media = liste de NOMS de la galerie (panneau admin > Galerie, clic sur le nom pour copier). afterMessages = nb de messages du fan avant l'étape (0 = immédiat). ppv: onBuy si achat, onNoBuy si pas d'achat après maxWaitMessages messages.",
+  "start": "A1",
+  "steps": {
+    "A1": {
+      "type": "teaser_text",
+      "afterMessages": 1,
+      "instruction": "Glisse subtilement que tu as fait un shooting aujourd'hui et que tu te sens bien dedans. Crée de la curiosité sans rien montrer.",
+      "next": "A2"
+    },
+    "A2": {
+      "type": "free_media",
+      "afterMessages": 2,
+      "media": [
+        "shooting_free"
+      ],
+      "instruction": "Envoie-lui une petite photo gratuite du shooting 'juste pour lui', demande-lui ce qu'il en pense.",
+      "next": "A3"
+    },
+    "A3": {
+      "type": "ppv",
+      "afterMessages": 2,
+      "stars": 150,
+      "media": [
+        "shooting_photo",
+        "shooting_video"
+      ],
+      "instruction": "Dis-lui que le reste du shooting est encore plus joli et que tu le lui envoies en privé. Écris un court message d'accroche avant le média.",
+      "caption": "le reste du shooting, rien que pour toi 🤍",
+      "waitingInstruction": "Le fan n'a pas encore débloqué ton contenu. Continue à discuter normalement, sans insister lourdement. Tu peux y faire une petite allusion légère une fois.",
+      "thanksInstruction": "Le fan vient de débloquer ton contenu. Remercie-le sincèrement et demande-lui s'il a aimé.",
+      "maxWaitMessages": 4,
+      "onBuy": "B1",
+      "onNoBuy": "X1"
+    },
+    "B1": {
+      "type": "teaser_text",
+      "afterMessages": 2,
+      "instruction": "Le fan a acheté. Parle-lui d'une nouvelle vidéo plus exclusive que tu gardes pour tes fans préférés.",
+      "next": "B2"
+    },
+    "B2": {
+      "type": "ppv",
+      "afterMessages": 1,
+      "stars": 300,
+      "media": [
+        "video_exclu"
+      ],
+      "instruction": "Présente la vidéo exclusive en une phrase complice.",
+      "caption": "ma vidéo préférée 😏",
+      "waitingInstruction": "Discute normalement, reste complice.",
+      "thanksInstruction": "Remercie-le chaleureusement, il fait partie de tes préférés.",
+      "maxWaitMessages": 5,
+      "onBuy": "END",
+      "onNoBuy": "END"
+    },
+    "X1": {
+      "type": "chat",
+      "afterMessages": 3,
+      "instruction": "Le fan n'a pas acheté. Reviens à une discussion amicale et légère, pose-lui des questions sur sa journée.",
+      "next": "X2"
+    },
+    "X2": {
+      "type": "ppv",
+      "afterMessages": 1,
+      "stars": 75,
+      "media": [
+        "photo_douce"
+      ],
+      "instruction": "Propose-lui une petite photo à prix doux, 'parce qu'il est sympa'.",
+      "caption": "petit cadeau à prix doux 🙈",
+      "waitingInstruction": "Discute normalement sans insister.",
+      "thanksInstruction": "Remercie-le, dis-lui que ça te fait plaisir.",
+      "maxWaitMessages": 5,
+      "onBuy": "B1",
+      "onNoBuy": "END"
+    },
+    "END": {
+      "type": "end",
+      "instruction": "Discussion libre et chaleureuse, entretiens la relation sans vendre.",
+      "maxMessages": 10
+    }
+  }
+}

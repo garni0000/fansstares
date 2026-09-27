@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FanBot · Admin</title>
+<style>
+  :root{--bg:#0b0b10;--panel:#14141c;--panel2:#1b1b26;--line:#262633;--txt:#ececf3;--mut:#8b8ba0;--acc:#8b5cf6;--acc2:#a78bfa;--ok:#22c55e;--err:#ef4444;--r:12px}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.5 Inter,system-ui,sans-serif}
+  button,input,select,textarea{font:inherit;color:inherit}
+  select,textarea{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 12px;width:100%}
+  textarea{min-height:74px;resize:vertical}select:focus,textarea:focus{outline:none;border-color:var(--acc)}
+  .map-wrap{position:relative;overflow-x:auto;padding:8px 2px 14px}
+  .map{position:relative;display:flex;gap:56px;align-items:flex-start;min-height:120px;width:max-content;padding-bottom:40px}
+  .col{display:flex;flex-direction:column;gap:14px}
+  .node{position:relative;z-index:1;min-width:150px;background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--mut);border-radius:0 10px 10px 0;padding:9px 12px;cursor:pointer;transition:.15s}
+  .node:hover{border-color:var(--acc)}.node.sel{outline:2px solid var(--acc);outline-offset:2px}
+  .node .id{font-family:ui-monospace,monospace;font-size:12px;color:var(--mut)}.node .t{font-weight:600}
+  .node.teaser_text,.node.chat{border-left-color:#8b8ba0}.node.free_media{border-left-color:#14b8a6}.node.ppv{border-left-color:#f97316}.node.end{border-left-color:#64748b}.node.stop{border-left-color:#ef4444}
+  .node .start{position:absolute;top:-9px;right:8px;background:var(--acc);color:#fff;font-size:10px;border-radius:5px;padding:0 6px}
+  .map svg{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:visible}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--mut);font-size:12px;margin-top:6px}.legend i{display:inline-block;width:18px;height:0;border-top:2px solid;vertical-align:middle;margin-right:6px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:700px){.two{grid-template-columns:1fr}nav{margin-left:0;overflow-x:auto}header{flex-wrap:wrap}}
+  .picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+  .pick{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:2px solid transparent;cursor:pointer;background:#000}
+  .pick img,.pick video{width:100%;height:100%;object-fit:cover;opacity:.55;transition:.15s}.pick.on{border-color:var(--acc)}.pick.on img,.pick.on video{opacity:1}
+  .pick .n{position:absolute;bottom:0;left:0;right:0;background:#000b;font-size:10px;padding:2px 4px;font-family:ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pick .k{position:absolute;top:4px;right:4px;background:var(--acc);color:#fff;border-radius:50%;width:20px;height:20px;font-size:11px;display:flex;align-items:center;justify-content:center}
+  .crm{display:grid;grid-template-columns:1fr;gap:18px}.crm.open{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}@media(max-width:900px){.crm.open{grid-template-columns:1fr}}
+  .tbl{width:100%;border-collapse:collapse}.tbl th{text-align:left;color:var(--mut);font-weight:500;font-size:12px;padding:8px 10px;border-bottom:1px solid var(--line)}
+  .tbl td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}.tbl tr.f{cursor:pointer}.tbl tr.f:hover td{background:var(--panel2)}.tbl tr.sel td{background:#8b5cf614}
+  .fn{font-weight:600}.fu{color:var(--mut);font-size:12px}
+  .pill{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12px;border:1px solid var(--line);white-space:nowrap}
+  .pill.active{color:#4ade80;border-color:#22c55e55;background:#22c55e14}.pill.paused{color:#fbbf24;border-color:#f59e0b55;background:#f59e0b14}.pill.stopped{color:#f87171;border-color:#ef444455;background:#ef444414}
+  .lvl{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}.lvl i{width:8px;height:8px;border-radius:2px;background:#8b8ba0}
+  .lvl.free_media i{background:#14b8a6}.lvl.ppv i{background:#f97316}.lvl.end i{background:#64748b}.lvl.stop i{background:#ef4444}.lvl.p1 i{background:var(--acc)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}.chip{border:1px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer;color:var(--mut);font-size:13px}.chip.on{border-color:var(--acc);color:var(--txt);background:#8b5cf61a}
+  .convo{display:flex;flex-direction:column;gap:8px;max-height:520px;overflow-y:auto;padding:12px;background:var(--bg);border:1px solid var(--line);border-radius:10px}
+  .b{max-width:82%;padding:8px 12px;border-radius:12px;white-space:pre-wrap;word-break:break-word;font-size:13.5px}
+  .b.user{align-self:flex-start;background:var(--panel2);border-bottom-left-radius:4px}.b.assistant{align-self:flex-end;background:#6d28d9;color:#fff;border-bottom-right-radius:4px}
+  .b.event{align-self:center;background:none;color:var(--mut);font-size:12px;font-style:italic;text-align:center;max-width:95%}
+  .b small{display:block;opacity:.6;font-size:10px;margin-top:3px}
+  .node .cnt{position:absolute;bottom:-9px;right:8px;background:var(--panel);border:1px solid var(--line);color:var(--txt);font-size:10px;border-radius:5px;padding:0 6px}
+  .errbox{background:#ef444415;border:1px solid #ef444460;color:#fca5a5;border-radius:8px;padding:10px 14px;white-space:pre-line;margin-bottom:14px}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.dirty{color:#fbbf24;font-size:12px}
+  .price{display:flex;align-items:center;gap:8px}.price input{max-width:160px}
+  .btn{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer;transition:.15s}
+  .btn:hover{border-color:var(--acc)}.btn.p{background:var(--acc);border-color:var(--acc);color:#fff}.btn.p:hover{background:var(--acc2)}
+  .btn.d{color:var(--err)}.btn.sm{padding:4px 10px;font-size:12px}
+  input{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 12px;width:100%}
+  input:focus{outline:none;border-color:var(--acc)}
+  header{display:flex;align-items:center;gap:16px;padding:14px 24px;border-bottom:1px solid var(--line);background:var(--panel)}
+  header b{font-size:16px}nav{display:flex;gap:4px;margin-left:24px}
+  nav a{padding:7px 14px;border-radius:8px;color:var(--mut);cursor:pointer}nav a.on{background:var(--panel2);color:var(--txt)}
+  .status{margin-left:auto;display:flex;align-items:center;gap:10px;color:var(--mut)}
+  .mode{display:flex;align-items:center;gap:6px}.mode select{width:auto;padding:5px 8px;font-size:13px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--err)}.dot.on{background:var(--ok)}
+  main{max-width:1380px;margin:0 auto;padding:28px 24px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:22px;margin-bottom:18px}
+  h2{margin:0 0 4px;font-size:18px;font-weight:600}.sub{color:var(--mut);margin:0 0 18px}
+  .drop{display:block;border:1.5px dashed var(--line);border-radius:var(--r);padding:28px;text-align:center;color:var(--mut);cursor:pointer;transition:.15s}
+  .drop.hover{border-color:var(--acc);background:#8b5cf610}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-top:18px}
+  .item{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  .thumb{aspect-ratio:1;background:#000;display:flex;align-items:center;justify-content:center;position:relative}
+  .thumb img,.thumb video{width:100%;height:100%;object-fit:cover}
+  .tag{position:absolute;top:8px;left:8px;background:#000a;border-radius:6px;padding:2px 8px;font-size:11px}
+  .meta{padding:10px}.name{font-family:ui-monospace,monospace;font-size:13px;word-break:break-all;cursor:pointer}
+  .name:hover{color:var(--acc2)}.row{display:flex;gap:6px;margin-top:8px}
+  .field{margin-bottom:16px}.field label{display:block;margin-bottom:6px;font-weight:500}.hint{color:var(--mut);font-size:12px;margin-top:4px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);padding:18px}.stat .v{font-size:26px;font-weight:600}.stat .l{color:var(--mut)}
+  #toast{position:fixed;bottom:20px;right:20px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 16px;opacity:0;transition:.2s;pointer-events:none;max-width:380px}
+  #toast.show{opacity:1}#toast.err{border-color:var(--err)}
+  #login{max-width:360px;margin:15vh auto}
+  .hidden{display:none!important}.empty{color:var(--mut);text-align:center;padding:30px}
+  code{background:var(--bg);padding:1px 6px;border-radius:5px}
+</style>
+</head>
+<body>
+
+<div id="login" class="card">
+  <h2>FanBot · Admin</h2><p class="sub">Entre le mot de passe du panneau (ADMIN_PASSWORD).</p>
+  <form id="loginForm"><input type="password" id="pwd" placeholder="Mot de passe" autofocus>
+  <button class="btn p" style="width:100%;margin-top:12px">Connexion</button></form>
+</div>
+
+<div id="app" class="hidden">
+  <header>
+    <b>FanBot</b>
+    <nav>
+      <a data-tab="funnel" class="on">Funnel</a>
+      <a data-tab="fans">Fans</a>
+      <a data-tab="galerie">Galerie</a>
+      <a data-tab="persona">Persona</a>
+      <a data-tab="params">Paramètres</a>
+      <a data-tab="stats">Stats</a>
+    </nav>
+    <div class="status"><label class="mode" title="Délai avant que la modèle réponde">⏱️
+        <select id="modeSel">
+          <option value="human">Humain · 15–20 s</option>
+          <option value="busy">Occupée · 1–2 min</option>
+          <option value="very_busy">Très occupée · 3–5 min</option>
+        </select></label>
+      <span class="dot" id="dot"></span><span id="botTxt">Bot arrêté</span>
+      <button class="btn sm" id="botBtn">Démarrer</button></div>
+  </header>
+
+  <main>
+    <!-- FUNNEL -->
+    <section id="tab-funnel">
+      <div class="card">
+        <div class="bar" style="justify-content:space-between">
+          <div><h2>Carte du funnel</h2><p class="sub" style="margin:0">Phase 2 : ce que le bot exécute après la phase de discussion. Clique sur une étape pour la modifier.</p></div>
+          <div class="bar"><span class="dirty hidden" id="dirty">Modifications non enregistrées</span>
+            <button class="btn" id="addStep">+ Ajouter une étape</button><button class="btn p" id="saveFunnel">Enregistrer le funnel</button></div>
+        </div>
+        <div class="map-wrap" style="margin-top:16px"><div class="map" id="map"></div></div>
+        <div class="legend"><span><i style="border-color:#8b8ba0"></i>étape suivante</span><span><i style="border-color:#22c55e"></i>il achète</span><span><i style="border-color:#ef4444;border-top-style:dashed"></i>il n'achète pas</span></div>
+      </div>
+      <div id="funnelErr" class="errbox hidden"></div>
+      <div class="card" id="editor"></div>
+    </section>
+
+    <!-- FANS (CRM) -->
+    <section id="tab-fans" class="hidden">
+      <div class="crm" id="crm">
+        <div class="card" style="margin:0">
+          <div class="bar" style="justify-content:space-between;margin-bottom:14px">
+            <div><h2>Fans</h2><p class="sub" style="margin:0" id="fansSub">—</p></div>
+            <button class="btn sm" id="fansRefresh">Actualiser</button>
+          </div>
+          <div class="bar" style="margin-bottom:12px">
+            <input id="fanSearch" placeholder="Rechercher un fan (nom, @pseudo, ID)" style="max-width:300px">
+            <div class="chips" id="fanChips"></div>
+          </div>
+          <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Fan</th><th>Niveau</th><th>Statut</th><th>Achats</th><th>Dernière activité</th></tr></thead><tbody id="fanRows"></tbody></table></div>
+        </div>
+        <div class="card hidden" id="fanDetail" style="margin:0"></div>
+      </div>
+    </section>
+
+    <!-- PERSONA -->
+    <section id="tab-persona" class="hidden">
+      <div class="card">
+        <h2>Persona & phase 1</h2>
+        <p class="sub">Qui est ta modèle et comment le bot discute avant de commencer le funnel.</p>
+        <form id="personaForm">
+          <div class="two"><div class="field"><label>Nom</label><input name="name"></div><div class="field"><label>Âge</label><input name="age" type="number" min="18"></div></div>
+          <div class="field"><label>Bio / personnalité</label><textarea name="bio"></textarea></div>
+          <div class="field"><label>Style d'écriture</label><textarea name="style"></textarea></div>
+          <div class="field"><label>Langue</label><input name="language"></div>
+          <div class="field"><label>Nombre de messages en phase 1</label><input name="phase1Messages" type="number" min="1" max="50" style="max-width:160px">
+            <div class="hint">Après ce nombre de messages du fan, le funnel démarre.</div></div>
+          <div class="field"><label>Consigne phase 1 (faire connaissance)</label><textarea name="phase1Instruction"></textarea></div>
+          <div class="field"><label>Consigne discussion libre</label><textarea name="freeChatInstruction"></textarea>
+            <div class="hint">Utilisée entre les étapes et à la fin du funnel.</div></div>
+          <button class="btn p">Enregistrer</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- GALERIE -->
+    <section id="tab-galerie" class="hidden">
+      <div class="card">
+        <h2>Galerie</h2>
+        <p class="sub">Ajoute tes contenus ici, ou dépose-les dans le dossier <code>galerie/</code> du projet (synchro auto). Ensuite choisis-les directement dans les étapes de l'onglet Funnel.</p>
+        <label class="drop" id="drop">Glisse tes photos / vidéos ici ou clique pour choisir<br><small>jpg, png, webp, mp4, mov · 50 Mo max</small>
+          <input type="file" id="fileIn" multiple accept="image/*,video/mp4,video/quicktime" hidden></label>
+        <div class="row" style="margin-top:12px"><button class="btn" id="syncBtn">Synchroniser le dossier galerie/</button></div>
+        <div class="grid" id="grid"></div>
+      </div>
+    </section>
+
+    <!-- PARAMETRES -->
+    <section id="tab-params" class="hidden">
+      <div class="card">
+        <h2>Paramètres</h2>
+        <p class="sub">Stockés dans Supabase. Les clés secrètes ne sont jamais réaffichées : laisse vide pour garder la valeur actuelle.</p>
+        <form id="setForm">
+          <div class="field"><label>Token du bot Telegram</label><input name="BOT_TOKEN" type="password" autocomplete="off">
+            <div class="hint" id="h-BOT_TOKEN">Donné par @BotFather</div></div>
+          <div class="field"><label>Ton ID Telegram (admin)</label><input name="ADMIN_TELEGRAM_ID">
+            <div class="hint">Donne accès à /stats et /reset dans le bot. Récupère-le via @userinfobot</div></div>
+          <div class="field"><label>Clé API OpenRouter</label><input name="OPENROUTER_API_KEY" type="password" autocomplete="off">
+            <div class="hint" id="h-OPENROUTER_API_KEY">openrouter.ai/keys</div></div>
+          <div class="field"><label>Modèle IA</label><input name="AI_MODEL">
+            <div class="hint">ex : google/gemini-2.5-flash, openai/gpt-4o-mini…</div></div>
+          <div class="field"><label>Vérification 18+ au début</label>
+            <select name="AGE_GATE" style="max-width:420px">
+              <option value="off">Désactivée : le fan commence à discuter directement</option>
+              <option value="on">Activée : bouton « J'ai 18 ans ou plus » (bot direct uniquement)</option>
+            </select>
+            <div class="hint">Dans tous les cas, si un fan dit avoir moins de 18 ans, la conversation est stoppée automatiquement.</div></div>
+          <button class="btn p">Enregistrer</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Compte perso · Telegram Business</h2>
+        <p class="sub">Le bot peut répondre à ta place depuis ton compte Telegram perso (Premium requis).</p>
+        <div id="bizStatus" style="margin-bottom:14px"></div>
+        <ol class="hint" style="font-size:13px;line-height:1.8;padding-left:18px;margin:0">
+          <li>Sur ton compte perso : <b>Paramètres → Telegram Business → Chatbots</b></li>
+          <li>Ajoute ton bot <b id="bizBot">@ton_bot</b> et active <b>« Répondre aux messages »</b></li>
+          <li>Choisis les discussions gérées (ex : tout le monde sauf tes contacts) et exclus tes proches</li>
+          <li>Le statut ci-dessus passe à « Connecté » : les fans qui écrivent à ton compte sont gérés par le funnel</li>
+        </ol>
+        <p class="hint" style="margin-top:12px">Si tu réponds toi-même à un fan depuis ton compte, le bot se met en pause pour lui (réactive-le dans l'onglet Fans).</p>
+      </div>
+    </section>
+
+    <!-- STATS -->
+    <section id="tab-stats" class="hidden">
+      <div class="card"><h2>Statistiques</h2><p class="sub">Vue d'ensemble des ventes.</p><div class="stats" id="stats"></div></div>
+    </section>
+  </main>
+</div>
+<div id="toast"></div>
+
+<script>
+let PWD = sessionStorage.getItem('pwd') || '';
+const $ = (s) => document.querySelector(s);
+const toast = (m, err) => { const t = $('#toast'); t.textContent = m; t.className = 'show' + (err ? ' err' : ''); clearTimeout(t._t); t._t = setTimeout(() => t.className = '', 3500); };
+
+async function api(path, opts = {}) {
+  const res = await fetch('/api' + path, { ...opts, headers: { 'x-admin-password': PWD, ...(opts.body && !(opts.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}), ...opts.headers } });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401) { sessionStorage.removeItem('pwd'); location.reload(); }
+  if (!res.ok) throw new Error(data.error || 'Erreur');
+  return data;
+}
+
+// ---- Login ----
+$('#loginForm').onsubmit = async (e) => { e.preventDefault(); PWD = $('#pwd').value; try { await api('/ping'); sessionStorage.setItem('pwd', PWD); boot(); } catch { toast('Mot de passe incorrect', true); } };
+async function boot() { $('#login').classList.add('hidden'); $('#app').classList.remove('hidden'); loadBot(); loadSettings(); loadPersona(); await loadMedia(); await loadFunnel(); loadFans(); }
+if (PWD) api('/ping').then(boot).catch(() => {});
+
+// ---- Onglets ----
+document.querySelectorAll('nav a').forEach((a) => a.onclick = () => {
+  document.querySelectorAll('nav a').forEach((x) => x.classList.toggle('on', x === a));
+  document.querySelectorAll('main section').forEach((s) => s.classList.toggle('hidden', s.id !== 'tab-' + a.dataset.tab));
+  if (a.dataset.tab === 'stats') loadStats();
+  if (a.dataset.tab === 'fans') loadFans();
+  if (a.dataset.tab === 'funnel') { renderEditor(); requestAnimationFrame(drawEdges); }
+});
+
+// ---- Bot ----
+function renderBot(s) {
+  if (s.username) $('#bizBot').textContent = '@' + s.username;
+  $('#dot').classList.toggle('on', s.running);
+  $('#botTxt').textContent = s.running ? `@${s.username} en ligne` : (s.error ? `Arrêté · ${s.error}` : 'Bot arrêté');
+  $('#botBtn').textContent = s.running ? 'Arrêter' : 'Démarrer';
+  $('#botBtn').dataset.on = s.running ? '1' : '';
+}
+const loadBot = () => api('/bot').then(renderBot);
+$('#botBtn').onclick = async () => { try { renderBot(await api($('#botBtn').dataset.on ? '/bot/stop' : '/bot/start', { method: 'POST' })); } catch (e) { toast(e.message, true); } };
+setInterval(() => PWD && loadBot().catch(() => {}), 10000);
+
+// ---- Galerie ----
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let MEDIA = [];
+async function loadMedia() {
+  const items = MEDIA = await api('/media');
+  $('#grid').innerHTML = items.length ? items.map((m) => `
+    <div class="item">
+      <div class="thumb">${m.type === 'video' ? `<video src="${esc(m.url)}" muted preload="metadata"></video>` : `<img src="${esc(m.url)}" loading="lazy">`}
+        <span class="tag">${m.type === 'video' ? 'Vidéo' : 'Photo'} · ${(m.size / 1048576).toFixed(1)} Mo</span></div>
+      <div class="meta"><div class="name" data-copy="${esc(m.name)}" title="Copier">${esc(m.name)}</div>
+        <div class="row"><button class="btn sm" data-ren="${m.id}" data-name="${esc(m.name)}">Renommer</button>
+        <button class="btn sm d" data-del="${m.id}">Supprimer</button></div></div>
+    </div>`).join('') : '<div class="empty">Aucun contenu pour le moment.</div>';
+  if (typeof FUNNEL !== 'undefined' && FUNNEL) renderEditor();
+}
+$('#grid').onclick = async (e) => {
+  const t = e.target;
+  try {
+    if (t.dataset.copy) { await navigator.clipboard.writeText(t.dataset.copy); toast(`"${t.dataset.copy}" copié`); }
+    if (t.dataset.ren) { const n = prompt('Nouveau nom (le funnel est mis à jour automatiquement) :', t.dataset.name); if (n) { await api('/media/' + t.dataset.ren, { method: 'PATCH', body: JSON.stringify({ name: n }) }); await loadMedia(); if (!DIRTY) loadFunnel(); } }
+    if (t.dataset.del && confirm('Supprimer ce contenu ?')) { await api('/media/' + t.dataset.del, { method: 'DELETE' }); loadMedia(); toast('Supprimé'); }
+  } catch (err) { toast(err.message, true); }
+};
+async function uploadFiles(files) {
+  if (!files.length) return;
+  const fd = new FormData(); [...files].forEach((f) => fd.append('files', f));
+  toast(`Envoi de ${files.length} fichier(s)…`);
+  try { await api('/media', { method: 'POST', body: fd }); toast('Ajouté à la galerie'); loadMedia(); } catch (e) { toast(e.message, true); }
+}
+$('#fileIn').onchange = (e) => uploadFiles(e.target.files);
+const drop = $('#drop');
+['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('hover'); }));
+['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('hover'); }));
+drop.addEventListener('drop', (e) => uploadFiles(e.dataTransfer.files));
+$('#syncBtn').onclick = async () => {
+  try { const r = await api('/media/sync', { method: 'POST' }); toast(`${r.added.length} ajouté(s), ${r.updated.length} mis à jour${r.errors.length ? ' · erreurs : ' + r.errors.join(', ') : ''}`, r.errors.length); loadMedia(); }
+  catch (e) { toast(e.message, true); }
+};
+
+// ---- Paramètres ----
+$('#modeSel').onchange = async (e) => {
+  try { await api('/settings', { method: 'PUT', body: JSON.stringify({ RESPONSE_MODE: e.target.value }) }); toast('Mode de réponse : ' + e.target.selectedOptions[0].text); }
+  catch (err) { toast(err.message, true); }
+};
+function renderBiz(s) {
+  let b = null; try { b = JSON.parse(s.BUSINESS_INFO?.value || 'null'); } catch {}
+  $('#bizStatus').innerHTML = b?.enabled && b.id
+    ? `<span class="pill active">Connecté</span> <span style="margin-left:8px">${esc(b.ownerName || '')}${b.ownerUsername ? ' · @' + esc(b.ownerUsername) : ''}</span>`
+      + (b.canReply ? '' : ' <span class="pill stopped" style="margin-left:6px">Droit « répondre » désactivé</span>')
+    : '<span class="pill">Non connecté</span>';
+}
+async function loadSettings() {
+  const s = await api('/settings');
+  renderBiz(s);
+  $('#modeSel').value = s.RESPONSE_MODE?.value || 'human';
+  for (const [k, v] of Object.entries(s)) {
+    const input = $(`#setForm [name=${k}]`);
+    if (!input) continue;
+    if ('value' in v) input.value = v.value;
+    else input.placeholder = v.set ? `Enregistré (${v.hint}) — laisse vide pour garder` : 'Non défini';
+  }
+}
+$('#setForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const body = Object.fromEntries(new FormData(e.target));
+  try {
+    const r = await api('/settings', { method: 'PUT', body: JSON.stringify(body) });
+    e.target.querySelectorAll('input[type=password]').forEach((i) => i.value = '');
+    renderBot(r.bot); loadSettings();
+    toast(r.changed.length ? 'Paramètres enregistrés' + (r.bot.running ? ' · bot en ligne' : '') : 'Rien à changer');
+  } catch (err) { toast(err.message, true); }
+};
+
+// ---- Stats ----
+async function loadStats() {
+  const s = await api('/stats');
+  const items = [['Fans', s.fans], ['En phase 2', s.phase2], ['PPV envoyés', s.ppvSent], ['PPV payés', s.ppvPaid], ['Stars gagnées', s.stars],
+    ['Conversion', s.ppvSent ? Math.round(s.ppvPaid / s.ppvSent * 100) + ' %' : '—']];
+  $('#stats').innerHTML = items.map(([l, v]) => `<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+}
+
+// ================= FUNNEL =================
+const TYPES = {
+  teaser_text: { label: 'Teaser texte', desc: "L'IA écrit un message qui crée la curiosité" },
+  free_media: { label: 'Média gratuit', desc: 'Envoie une photo / vidéo offerte + légende IA' },
+  ppv: { label: 'PPV payant', desc: 'Média flouté débloquable en Telegram Stars' },
+  chat: { label: 'Discussion', desc: 'Discussion guidée par ta consigne' },
+  end: { label: 'Fin', desc: 'Discussion libre, plus de vente' },
+  stop: { label: 'Stop', desc: 'Dernier message (optionnel) puis la modèle ne répond plus à ce fan. Réactivable dans l\'onglet Fans.' },
+};
+let FUNNEL = null, SEL = null, DIRTY = false, STEP_COUNT = {};
+
+const setDirty = (v = true) => { DIRTY = v; $('#dirty').classList.toggle('hidden', !v); };
+window.addEventListener('beforeunload', (e) => { if (DIRTY) { e.preventDefault(); e.returnValue = ''; } });
+
+async function loadFunnel() {
+  FUNNEL = await api('/funnel');
+  delete FUNNEL._doc;
+  SEL = FUNNEL.start in FUNNEL.steps ? FUNNEL.start : Object.keys(FUNNEL.steps)[0];
+  setDirty(false); renderMap(); renderEditor();
+}
+
+const links = (s) => ['end', 'stop'].includes(s.type) ? [] : s.type === 'ppv'
+  ? [['onBuy', s.onBuy, 'buy'], ['onNoBuy', s.onNoBuy, 'nobuy']]
+  : [['next', s.next, 'next']];
+
+// Colonnes = distance depuis l'étape de départ
+function layout() {
+  const depth = {}, cols = [];
+  const q = FUNNEL.steps[FUNNEL.start] ? [FUNNEL.start] : [];
+  if (q.length) depth[FUNNEL.start] = 0;
+  while (q.length) {
+    const id = q.shift();
+    for (const [, to] of links(FUNNEL.steps[id])) {
+      if (to && FUNNEL.steps[to] && !(to in depth)) { depth[to] = depth[id] + 1; q.push(to); }
+    }
+  }
+  const orphanCol = Math.max(-1, ...Object.values(depth)) + 1;
+  for (const id of Object.keys(FUNNEL.steps)) (cols[depth[id] ?? orphanCol] ||= []).push(id);
+  return cols.filter(Boolean);
+}
+
+function nodeLabel(s) {
+  if (s.type === 'ppv') return `PPV · ${s.stars || '?'} ⭐`;
+  if (s.type === 'free_media') return `Média gratuit${s.media?.length ? ' · ' + s.media.length : ''}`;
+  return TYPES[s.type]?.label || s.type;
+}
+
+function renderMap() {
+  const map = $('#map');
+  map.innerHTML = layout().map((col) => `<div class="col">${col.map((id) => {
+    const s = FUNNEL.steps[id];
+    return `<div class="node ${s.type} ${id === SEL ? 'sel' : ''}" data-node="${esc(id)}">
+      ${id === FUNNEL.start ? '<span class="start">départ</span>' : ''}${STEP_COUNT[id] ? `<span class="cnt">${STEP_COUNT[id]} fan${STEP_COUNT[id] > 1 ? 's' : ''}</span>` : ''}
+      <div class="id">${esc(id)}</div><div class="t">${esc(nodeLabel(s))}</div></div>`;
+  }).join('')}</div>`).join('') + '<svg id="edges"></svg>';
+  requestAnimationFrame(drawEdges);
+}
+
+function drawEdges() {
+  const map = $('#map'), svg = $('#edges');
+  if (!svg || !map.offsetParent) return;
+  const base = map.getBoundingClientRect();
+  svg.setAttribute('width', map.scrollWidth); svg.setAttribute('height', map.scrollHeight);
+  const box = (id) => { const el = map.querySelector(`[data-node="${CSS.escape(id)}"]`); return el && el.getBoundingClientRect(); };
+  const COLORS = { next: '#8b8ba0', buy: '#22c55e', nobuy: '#ef4444' };
+  let out = '';
+  for (const [id, s] of Object.entries(FUNNEL.steps)) {
+    const a = box(id); if (!a) continue;
+    for (const [, to, kind] of links(s)) {
+      const b = to && box(to); if (!b) continue;
+      const dash = kind === 'nobuy' ? 'stroke-dasharray="5 4"' : '';
+      let d;
+      if (b.left > a.left) { // vers la droite
+        const x1 = a.right - base.left, y1 = a.top + a.height / 2 - base.top + (kind === 'buy' ? -8 : kind === 'nobuy' ? 8 : 0);
+        const x2 = b.left - base.left - 2, y2 = b.top + b.height / 2 - base.top, c = Math.max(30, (x2 - x1) / 2);
+        d = `M${x1} ${y1} C${x1 + c} ${y1}, ${x2 - c} ${y2}, ${x2} ${y2}`;
+      } else { // retour en arrière : passe par-dessous
+        const x1 = a.left + a.width / 2 - base.left, y1 = a.bottom - base.top;
+        const x2 = b.left + b.width / 2 - base.left, y2 = b.bottom - base.top + 2;
+        const low = Math.max(y1, y2) + 34;
+        d = `M${x1} ${y1} C${x1} ${low}, ${x2} ${low}, ${x2} ${y2}`;
+      }
+      out += `<path d="${d}" fill="none" stroke="${COLORS[kind]}" stroke-width="1.6" ${dash} marker-end="url(#ah-${kind})"/>`;
+    }
+  }
+  svg.innerHTML = `<defs>${Object.entries(COLORS).map(([k, c]) => `<marker id="ah-${k}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L8 5L1 9" fill="none" stroke="${c}" stroke-width="1.6"/></marker>`).join('')}</defs>` + out;
+}
+window.addEventListener('resize', () => requestAnimationFrame(drawEdges));
+
+$('#map').onclick = (e) => { const n = e.target.closest('[data-node]'); if (n) { SEL = n.dataset.node; renderMap(); renderEditor(); $('#editor').scrollIntoView({ behavior: 'smooth', block: 'start' }); } };
+
+const stepOptions = (cur, self) => `<option value="">— aucune —</option>` +
+  Object.keys(FUNNEL.steps).filter((id) => id !== self).map((id) => `<option value="${esc(id)}" ${id === cur ? 'selected' : ''}>${esc(id)} · ${esc(nodeLabel(FUNNEL.steps[id]))}</option>`).join('');
+
+function mediaPicker(sel = []) {
+  if (!MEDIA.length) return '<div class="hint">Ta galerie est vide : ajoute des contenus dans l\'onglet Galerie.</div>';
+  return `<div class="picker">${MEDIA.map((m) => {
+    const k = sel.indexOf(m.name);
+    const inner = m.type === 'video' ? `<video src="${esc(m.url)}" muted preload="metadata"></video>` : `<img src="${esc(m.url)}" loading="lazy">`;
+    return `<div class="pick ${k >= 0 ? 'on' : ''}" data-pick="${esc(m.name)}" title="${esc(m.name)}">${inner}${k >= 0 ? `<span class="k">${k + 1}</span>` : ''}<span class="n">${m.type === 'video' ? '▶ ' : ''}${esc(m.name)}</span></div>`;
+  }).join('')}</div><div class="hint">Clique pour sélectionner (ordre = numéro). 10 max.</div>`;
+}
+
+function renderEditor() {
+  const ed = $('#editor');
+  if (!FUNNEL) return;
+  const s = FUNNEL.steps[SEL];
+  if (!s) { ed.innerHTML = '<div class="empty">Aucune étape. Clique sur « + Ajouter une étape ».</div>'; return; }
+  const v = (k, d = '') => esc(s[k] ?? d);
+  const isMedia = s.type === 'free_media' || s.type === 'ppv';
+  ed.innerHTML = `
+    <div class="bar" style="justify-content:space-between;margin-bottom:16px">
+      <h2>Étape ${esc(SEL)}</h2>
+      <div class="bar">${SEL !== FUNNEL.start ? '<button class="btn sm" data-act="start">Définir comme départ</button>' : '<span class="hint">Étape de départ du funnel</span>'}
+      <button class="btn sm d" data-act="del">Supprimer</button></div>
+    </div>
+    <div class="two">
+      <div class="field"><label>Identifiant</label><input data-f="__id" value="${esc(SEL)}"><div class="hint">Court et unique (ex : A1, B2, relance1)</div></div>
+      <div class="field"><label>Type d'étape</label><select data-f="type">${Object.entries(TYPES).map(([k, t]) => `<option value="${k}" ${k === s.type ? 'selected' : ''}>${t.label}</option>`).join('')}</select>
+        <div class="hint">${TYPES[s.type]?.desc || ''}</div></div>
+    </div>
+    ${s.type !== 'end' ? `<div class="field"><label>Attendre combien de messages du fan avant d'exécuter ?</label><input data-f="afterMessages" type="number" min="0" max="20" value="${v('afterMessages', 1)}" style="max-width:160px"><div class="hint">0 = tout de suite après l'étape précédente</div></div>` : ''}
+    <div class="field"><label>${s.type === 'end' ? 'Consigne de discussion libre' : s.type === 'stop' ? 'Dernier message avant d\'arrêter (optionnel, vide = silence direct)' : "Consigne pour l'IA"}</label><textarea data-f="instruction" placeholder="Ce que la modèle doit dire / faire à cette étape">${v('instruction')}</textarea></div>
+    ${s.type === 'end' ? `<div class="field"><label>Arrêter de répondre après combien de messages ?</label><input data-f="maxMessages" type="number" min="0" max="200" value="${v('maxMessages', 0)}" style="max-width:160px"><div class="hint">0 = jamais. Évite de discuter des heures avec un fan qui n'achète plus (réactivable dans Fans).</div></div>` : ''}
+    ${isMedia ? `<div class="field"><label>Média${s.type === 'ppv' ? 's payants' : ' gratuit'}</label>${mediaPicker(s.media)}</div>` : ''}
+    ${s.type === 'ppv' ? `
+      <div class="two">
+        <div class="field"><label>Prix</label><div class="price"><input data-f="stars" type="number" min="1" max="10000" value="${v('stars', 100)}"><span>⭐ Stars</span></div></div>
+        <div class="field"><label>Légende sur le média flouté</label><input data-f="caption" value="${v('caption')}"></div>
+      </div>
+      <div class="field"><label>Consigne pendant l'attente de l'achat</label><textarea data-f="waitingInstruction">${v('waitingInstruction')}</textarea></div>
+      <div class="field"><label>Consigne de remerciement après l'achat</label><textarea data-f="thanksInstruction">${v('thanksInstruction')}</textarea></div>
+      <div class="field"><label>Nombre de messages sans achat avant de passer à la suite</label><input data-f="maxWaitMessages" type="number" min="1" max="50" value="${v('maxWaitMessages', 4)}" style="max-width:160px"></div>
+      <div class="two">
+        <div class="field"><label style="color:#4ade80">S'il achète → aller à</label><select data-f="onBuy">${stepOptions(s.onBuy, SEL)}</select></div>
+        <div class="field"><label style="color:#f87171">S'il n'achète pas → aller à</label><select data-f="onNoBuy">${stepOptions(s.onNoBuy, SEL)}</select></div>
+      </div>` : ''}
+    ${!['ppv', 'end', 'stop'].includes(s.type) ? `<div class="field"><label>Étape suivante</label><select data-f="next">${stepOptions(s.next, SEL)}</select></div>` : ''}`;
+}
+
+const NUM = ['afterMessages', 'stars', 'maxWaitMessages', 'maxMessages'];
+$('#editor').addEventListener('input', (e) => {
+  const f = e.target.dataset.f; if (!f || f === '__id' || e.target.tagName === 'SELECT') return;
+  const s = FUNNEL.steps[SEL];
+  s[f] = NUM.includes(f) ? (e.target.value === '' ? undefined : Number(e.target.value)) : e.target.value;
+  setDirty(); if (f === 'stars') renderMap();
+});
+$('#editor').addEventListener('change', (e) => {
+  const f = e.target.dataset.f; if (!f) return;
+  const s = FUNNEL.steps[SEL];
+  if (f === '__id') return renameStep(e.target.value.trim());
+  if (e.target.tagName !== 'SELECT') return;
+  s[f] = e.target.value || undefined;
+  if (f === 'type') {
+    if (s.type === 'ppv') { s.stars ??= 100; s.maxWaitMessages ??= 4; s.caption ??= ''; delete s.next; }
+    else { delete s.onBuy; delete s.onNoBuy; }
+    if (s.type === 'end' || s.type === 'stop') delete s.next;
+    if (s.type !== 'ppv' && s.type !== 'free_media') delete s.media;
+    renderEditor();
+  }
+  setDirty(); renderMap();
+});
+$('#editor').addEventListener('click', (e) => {
+  const s = FUNNEL.steps[SEL];
+  const p = e.target.closest('[data-pick]');
+  if (p) {
+    s.media ||= [];
+    const i = s.media.indexOf(p.dataset.pick);
+    if (i >= 0) s.media.splice(i, 1); else if (s.media.length < 10) s.media.push(p.dataset.pick); else return toast('10 médias max', true);
+    setDirty(); renderEditor(); renderMap(); return;
+  }
+  const act = e.target.dataset.act;
+  if (act === 'start') { FUNNEL.start = SEL; setDirty(); renderMap(); renderEditor(); }
+  if (act === 'del' && confirm(`Supprimer l'étape ${SEL} ?`)) {
+    delete FUNNEL.steps[SEL];
+    for (const st of Object.values(FUNNEL.steps)) for (const k of ['next', 'onBuy', 'onNoBuy']) if (st[k] === SEL) delete st[k];
+    if (FUNNEL.start === SEL) FUNNEL.start = Object.keys(FUNNEL.steps)[0] || '';
+    SEL = FUNNEL.start; setDirty(); renderMap(); renderEditor();
+  }
+});
+
+function renameStep(nid) {
+  if (nid === SEL) return;
+  if (!/^[A-Za-z0-9_-]{1,20}$/.test(nid)) { toast('Identifiant : lettres, chiffres, _ ou - (20 max)', true); return renderEditor(); }
+  if (FUNNEL.steps[nid]) { toast('Cet identifiant existe déjà', true); return renderEditor(); }
+  const steps = {};
+  for (const [id, st] of Object.entries(FUNNEL.steps)) steps[id === SEL ? nid : id] = st;
+  for (const st of Object.values(steps)) for (const k of ['next', 'onBuy', 'onNoBuy']) if (st[k] === SEL) st[k] = nid;
+  if (FUNNEL.start === SEL) FUNNEL.start = nid;
+  FUNNEL.steps = steps; SEL = nid; setDirty(); renderMap(); renderEditor();
+}
+
+$('#addStep').onclick = () => {
+  let i = Object.keys(FUNNEL.steps).length + 1; while (FUNNEL.steps['S' + i]) i++;
+  const id = 'S' + i;
+  FUNNEL.steps[id] = { type: 'teaser_text', afterMessages: 1, instruction: '' };
+  if (FUNNEL.steps[SEL] && !['ppv', 'end', 'stop'].includes(FUNNEL.steps[SEL].type) && !FUNNEL.steps[SEL].next) FUNNEL.steps[SEL].next = id;
+  if (!FUNNEL.start) FUNNEL.start = id;
+  SEL = id; setDirty(); renderMap(); renderEditor();
+};
+
+$('#saveFunnel').onclick = async () => {
+  const box = $('#funnelErr');
+  try {
+    FUNNEL = await api('/funnel', { method: 'PUT', body: JSON.stringify(FUNNEL) });
+    box.classList.add('hidden'); setDirty(false); toast('Funnel enregistré · actif immédiatement');
+  } catch (e) { box.textContent = e.message; box.classList.remove('hidden'); box.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+};
+
+// ================= PERSONA =================
+async function loadPersona() {
+  const p = await api('/persona');
+  for (const el of $('#personaForm').elements) if (el.name) el.value = p[el.name] ?? '';
+}
+$('#personaForm').onsubmit = async (e) => {
+  e.preventDefault();
+  try { await api('/persona', { method: 'PUT', body: JSON.stringify(Object.fromEntries(new FormData(e.target))) }); toast('Persona enregistrée'); PERSONA = null; }
+  catch (err) { toast(err.message, true); }
+};
+
+// ================= FANS (CRM) =================
+const STATUS = { active: 'Actif', paused: 'En pause', stopped: 'Stoppé' };
+let FANS = [], FAN_FILTER = 'all', FAN_SEL = null, PERSONA = null;
+
+function ago(d) {
+  if (!d) return '—';
+  const s = (Date.now() - new Date(d)) / 1000;
+  if (s < 60) return "à l'instant";
+  if (s < 3600) return `il y a ${Math.floor(s / 60)} min`;
+  if (s < 86400) return `il y a ${Math.floor(s / 3600)} h`;
+  return `il y a ${Math.floor(s / 86400)} j`;
+}
+
+function level(f) {
+  if (!f.adult_ok) return { cls: 'p1', txt: 'Âge non confirmé' };
+  if (f.phase === 1) return { cls: 'p1', txt: `Phase 1 · ${f.phase1_count}/${PERSONA?.phase1Messages ?? '?'} msgs` };
+  const st = FUNNEL?.steps?.[f.step_id];
+  if (!st) return { cls: '', txt: f.step_id ? `${f.step_id} (supprimée)` : '—' };
+  let txt = `${f.step_id} · ${nodeLabel(st)}`;
+  if (st.type === 'ppv' && f.step_done) txt += ' · en attente d\'achat';
+  return { cls: st.type, txt };
+}
+
+async function loadFans() {
+  try {
+    [FANS, PERSONA] = await Promise.all([api('/fans'), PERSONA ? PERSONA : api('/persona')]);
+  } catch (e) { return toast(e.message, true); }
+  STEP_COUNT = {};
+  for (const f of FANS) if (f.phase === 2 && (f.status || 'active') === 'active' && f.step_id) STEP_COUNT[f.step_id] = (STEP_COUNT[f.step_id] || 0) + 1;
+  if (FUNNEL) renderMap();
+  renderFans();
+  if (FAN_SEL && !FANS.find((f) => String(f.id) === String(FAN_SEL))) closeFan();
+}
+
+function renderFans() {
+  const count = { all: FANS.length, active: 0, paused: 0, stopped: 0 };
+  for (const f of FANS) count[f.status || 'active']++;
+  const stars = FANS.reduce((a, f) => a + (f.total_stars || 0), 0);
+  $('#fansSub').textContent = `${FANS.length} fan(s) · ${FANS.reduce((a, f) => a + (f.purchases || 0), 0)} achat(s) · ${stars} ⭐`;
+  $('#fanChips').innerHTML = [['all', 'Tous'], ['active', 'Actifs'], ['paused', 'En pause'], ['stopped', 'Stoppés']]
+    .map(([k, l]) => `<span class="chip ${FAN_FILTER === k ? 'on' : ''}" data-filter="${k}">${l} · ${count[k]}</span>`).join('');
+  const q = $('#fanSearch').value.trim().toLowerCase();
+  const rows = FANS.filter((f) => (FAN_FILTER === 'all' || (f.status || 'active') === FAN_FILTER)
+    && (!q || `${f.first_name} ${f.username} ${f.id}`.toLowerCase().includes(q)));
+  $('#fanRows').innerHTML = rows.length ? rows.map((f) => {
+    const lv = level(f), st = f.status || 'active';
+    return `<tr class="f ${String(f.id) === String(FAN_SEL) ? 'sel' : ''}" data-fan="${f.id}">
+      <td><div class="fn">${esc(f.first_name || 'Sans nom')}</div><div class="fu">${f.username ? '@' + esc(f.username) + ' · ' : ''}${f.id}</div></td>
+      <td><span class="lvl ${lv.cls}"><i></i>${esc(lv.txt)}</span></td>
+      <td><span class="pill ${st}">${STATUS[st]}</span></td>
+      <td style="white-space:nowrap">${f.purchases || 0} · ${f.total_stars || 0} ⭐</td>
+      <td class="fu">${ago(f.last_seen)}</td></tr>`;
+  }).join('') : '<tr><td colspan="5" class="empty">Aucun fan.</td></tr>';
+}
+
+$('#fanChips').onclick = (e) => { const c = e.target.closest('[data-filter]'); if (c) { FAN_FILTER = c.dataset.filter; renderFans(); } };
+$('#fanSearch').oninput = renderFans;
+$('#fansRefresh').onclick = () => { loadFans(); if (FAN_SEL) openFan(FAN_SEL); };
+$('#fanRows').onclick = (e) => { const r = e.target.closest('[data-fan]'); if (r) openFan(r.dataset.fan); };
+setInterval(() => { if (PWD && !$('#tab-fans').classList.contains('hidden')) loadFans(); }, 15000);
+
+function closeFan() { FAN_SEL = null; $('#fanDetail').classList.add('hidden'); $('#crm').classList.remove('open'); renderFans(); }
+
+async function openFan(id) {
+  FAN_SEL = id; renderFans();
+  const f = FANS.find((x) => String(x.id) === String(id)); if (!f) return;
+  const box = $('#fanDetail');
+  box.classList.remove('hidden'); $('#crm').classList.add('open');
+  const st = f.status || 'active', lv = level(f);
+  const stepOpts = `<option value="__phase1">Phase 1 · faire connaissance</option>` + Object.keys(FUNNEL.steps)
+    .map((sid) => `<option value="${esc(sid)}" ${f.phase === 2 && sid === f.step_id ? 'selected' : ''}>${esc(sid)} · ${esc(nodeLabel(FUNNEL.steps[sid]))}</option>`).join('');
+  box.innerHTML = `
+    <div class="bar" style="justify-content:space-between;margin-bottom:12px">
+      <div><h2>${esc(f.first_name || 'Sans nom')}</h2><div class="fu">${f.username ? '@' + esc(f.username) + ' · ' : ''}ID ${f.id} · arrivé ${ago(f.created_at)}</div></div>
+      <button class="btn sm" data-fa="close">✕</button>
+    </div>
+    <div class="bar" style="margin-bottom:14px">
+      <span class="pill ${st}">${STATUS[st]}</span><span class="lvl ${lv.cls}"><i></i>${esc(lv.txt)}</span>
+      <span class="fu">${f.purchases || 0} achat(s) · ${f.total_stars || 0} ⭐</span>
+    </div>
+    <div class="bar" style="margin-bottom:14px">
+      ${st === 'active' ? '<button class="btn sm" data-fa="paused">⏸ Mettre en pause</button><button class="btn sm" data-fa="stopped">⛔ Stopper</button>'
+        : '<button class="btn sm p" data-fa="active">▶ Réactiver</button>'}
+      <button class="btn sm d" data-fa="delete">Supprimer le fan</button>
+    </div>
+    <div class="field"><label>Déplacer vers l'étape</label>
+      <div class="bar"><select id="fanStep" style="max-width:320px">${stepOpts}</select><button class="btn sm" data-fa="move">Appliquer</button></div>
+      <div class="hint">L'étape s'exécutera selon ses réglages au prochain message du fan.</div></div>
+    <div class="field"><label>Conversation</label><div class="convo" id="fanChat"><div class="empty">Chargement…</div></div></div>`;
+  try {
+    const msgs = await api(`/fans/${id}/messages`);
+    if (String(FAN_SEL) !== String(id)) return;
+    const chat = $('#fanChat');
+    const when = (d) => new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    // une réponse de la modèle en 2 bulles Telegram = 2 bulles ici aussi
+    chat.innerHTML = msgs.length ? msgs.flatMap((m) => (m.role === 'assistant' ? m.content.split('\n').filter(Boolean) : [m.content])
+      .map((c) => `<div class="b ${m.role === 'event' ? 'event' : m.role}">${esc(c)}<small>${when(m.created_at)}</small></div>`)).join('')
+      : '<div class="empty">Aucun message.</div>';
+    chat.scrollTop = chat.scrollHeight;
+  } catch (e) { $('#fanChat').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+
+$('#fanDetail').onclick = async (e) => {
+  const a = e.target.dataset.fa; if (!a) return;
+  if (a === 'close') return closeFan();
+  const id = FAN_SEL;
+  try {
+    if (a === 'delete') {
+      if (!confirm('Supprimer ce fan et tout son historique ? S\'il réécrit, il recommencera depuis le début.')) return;
+      await api(`/fans/${id}`, { method: 'DELETE' }); toast('Fan supprimé'); closeFan();
+    } else if (a === 'move') {
+      await api(`/fans/${id}`, { method: 'PATCH', body: JSON.stringify({ step_id: $('#fanStep').value }) }); toast('Étape modifiée');
+    } else {
+      await api(`/fans/${id}`, { method: 'PATCH', body: JSON.stringify({ status: a }) });
+      toast({ active: 'Fan réactivé', paused: 'Fan en pause : la modèle ne lui répond plus', stopped: 'Fan stoppé' }[a]);
+    }
+    await loadFans(); if (FAN_SEL) openFan(FAN_SEL);
+  } catch (err) {
+    toast(/status/i.test(err.message) ? 'Colonne "status" manquante : exécute la mise à jour SQL dans Supabase' : err.message, true);
+  }
+};
+</script>
+</body>
+</html>
